@@ -6,7 +6,7 @@
 
 支持 Bing、搜狗、AnySearch 多引擎聚合网络搜索、缩写翻译与自动降级能力。
 
-- **插件目录**：`xxxxx7258_google-search-plugin`
+- **插件目录**：`wenaixi_mai_realtime_web_search`
 - **生效版本**：`v4.1.1`
 - **开源许可证**：`GPL-3.0`
 

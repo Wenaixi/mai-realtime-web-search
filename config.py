@@ -120,13 +120,16 @@ class EnginesSection(PluginConfigBase):
     # Google
     google_enabled: bool = Field(default=False, description="是否启用 Google 搜索")
     google_language: str = Field(default="zh-cn", description="搜索语言")
+    google_proxy: str = Field(default="", description="Google 搜索独立代理，例如 http://10.150.1.139:7890；留空继承全局代理，填写 direct 强制直连")
 
     # Bing
     bing_enabled: bool = Field(default=True, description="是否启用 Bing 搜索")
     bing_region: str = Field(default="zh-CN", description="Bing 搜索区域代码")
+    bing_proxy: str = Field(default="", description="Bing 搜索独立代理；留空继承全局代理，填写 direct 强制直连")
 
     # 搜狗
     sogou_enabled: bool = Field(default=True, description="是否启用搜狗搜索")
+    sogou_proxy: str = Field(default="", description="搜狗搜索独立代理；留空继承全局代理，填写 direct 强制直连")
 
     # DuckDuckGo (DDGS)
     duckduckgo_enabled: bool = Field(default=True, description="是否启用 DDGS 元搜索引擎")
@@ -143,6 +146,7 @@ class EnginesSection(PluginConfigBase):
         default="none",
         description="时间限制 (d, w, m, y;none 表示不限)",
     )
+    duckduckgo_proxy: str = Field(default="", description="DuckDuckGo 搜索独立代理，例如 http://10.150.1.139:7890；留空继承全局代理，填写 direct 强制直连")
 
     # Tavily
     tavily_enabled: bool = Field(default=False, description="是否启用 Tavily 搜索")
@@ -162,6 +166,7 @@ class EnginesSection(PluginConfigBase):
         ),
     )
     tavily_turbo: bool = Field(default=False, description="是否启用 Tavily Turbo 模式")
+    tavily_proxy: str = Field(default="", description="Tavily 搜索独立代理，例如 http://10.150.1.139:7890；留空继承全局代理，填写 direct 强制直连")
 
     # AnySearch
     anysearch_enabled: bool = Field(default=True, description="是否启用 AnySearch 搜索")
@@ -179,6 +184,7 @@ class EnginesSection(PluginConfigBase):
         description='标签专属参数，填写 JSON 对象，例如 {"library":"golang"}；留空不传',
     )
     anysearch_format: Literal["json", "markdown"] = Field(default="json", description="API 返回内容格式")
+    anysearch_proxy: str = Field(default="", description="AnySearch 搜索独立代理，例如 http://10.150.1.139:7890；留空继承全局代理，填写 direct 强制直连")
 
     # Exa
     exa_enabled: bool = Field(default=False, description="是否启用 Exa 搜索")
