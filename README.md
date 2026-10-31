@@ -1,22 +1,38 @@
-# 麦麦联网插件 (search plugin)
+# 麦麦全网实时联网综合搜索 (wenaixi_mai_realtime_web_search)
 
-> 本插件由 [Wenaixi](https://github.com/Wenaixi) 维护，是专为生产环境深度调优的高可用分支。
+> 本插件由 [Wenaixi](https://github.com/Wenaixi) 维护，是专为生产环境深度调优的高可用多引擎聚合搜索分支。
 
 ## 简介与定位
 
-支持 Bing、搜狗、AnySearch 多引擎聚合网络搜索、缩写翻译与自动降级能力。
+支持 13 大搜索引擎多维聚合检索（涵盖国内免代理、官方 API、海外隐私引擎、维基百科与 SearXNG 元搜索实例），具备自动降级容灾与单引擎独立代理调度能力。
 
 - **插件目录**：`wenaixi_mai_realtime_web_search`
-- **生效版本**：`v4.1.1`
+- **插件标识符**：`wenaixi.mai_realtime_web_search`
+- **生效版本**：`v4.2.0`
 - **开源许可证**：`GPL-3.0`
 
 ---
 
-## 核心特性与本地深度调优
+## 聚合引擎生态矩阵 (13 大引擎)
 
-- 配置 Bing + 搜狗免代理国内直连通道
-- 注入主人专属 AnySearch 密钥 (as_sk_43fc...)，开启 AnySearch 引擎
-- 关闭无代理易超时的 DuckDuckGo，搜索稳定秒出
+| 类别 | 包含搜索引擎 | 特性说明 |
+| :--- | :--- | :--- |
+| **国内免代理** | **Bing (默认)**、**百度 (Baidu)**、**搜狗 (Sogou)** | 国内外免代理直连秒级响应，中文生活与长尾资讯覆盖全面 |
+| **官方直连 API** | **AnySearch**、**DeepSeek 联网搜索** | 结构化搜索，自带摘要与格式清洗 |
+| **权威知识库** | **维基百科 (Wikipedia)** | MediaWiki 官方 API，权威百科条目结构化提取，纯净无噪 |
+| **元搜索实例** | **SearXNG** | 直连自建或公开 SearXNG 实例，一键聚合 70+ 引擎生态 |
+| **独立与隐私** | **Brave Search**、**DuckDuckGo** | 独立网页索引，无用户追踪保护隐私 |
+| **专业 AI 检索** | **Tavily**、**Exa**、**You.com** | 面向 LLM 设计的高质量研究型与语义检索接口 |
+
+---
+
+## 单引擎独立代理配置指南
+
+在 `config.toml` 中，每个搜索引擎均包含独立的 `[engine]_proxy` 配置项：
+
+- **默认行为**：所有引擎的 `[engine]_proxy` 默认留空 `""`，不走代理直连网络，零多余开销；
+- **单独配置代理**：若某个海外引擎（如 Google、DuckDuckGo、Brave、维基百科等）需要代理，只需在该引擎下直接填写代理地址即可（例如：`google_proxy = "http://10.150.1.139:7890"`）；
+- **强制免代理直连**：若全局配置了 `search_backend.proxy`，但想让特定引擎走直连，可填写 `"direct"` 或 `"none"`。
 
 ---
 
@@ -26,14 +42,8 @@
 - `/google_search_status - 查询联网引擎可用状态`
 
 ### 大模型工具 (Tool)
-- `@Tool("web_search") - 全网实时搜索`
-- `@Tool("abbreviation_translate") - 缩写翻译`
-
----
-
-## 快速配置
-
-配置文件统一定位于插件根目录下的 `config.toml`。修改后重启或通过 WebUI 热重载即可生效。
+- `@Tool("web_search") - 全网实时搜索与正文提取`
+- `@Tool("abbreviation_translate") - 缩写翻译 (神奇海螺)`
 
 ---
 

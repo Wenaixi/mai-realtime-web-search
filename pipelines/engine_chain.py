@@ -11,13 +11,17 @@ import logging
 from typing import TYPE_CHECKING, Any, Optional
 
 from ..search_engines.anysearch import AnySearchEngine
+from ..search_engines.baidu import BaiduEngine
 from ..search_engines.bing import BingEngine
+from ..search_engines.brave import BraveEngine
 from ..search_engines.deepseek import DeepSeekEngine
 from ..search_engines.duckduckgo import DuckDuckGoEngine
 from ..search_engines.exa import ExaEngine
 from ..search_engines.google import GoogleEngine
+from ..search_engines.searxng import SearXNGEngine
 from ..search_engines.sogou import SogouEngine
 from ..search_engines.tavily import TavilyEngine
+from ..search_engines.wikipedia import WikipediaEngine
 from ..search_engines.you import (
     YouContentsClient,
     YouLiveNewsEngine,
@@ -46,12 +50,35 @@ def _build_engine_dict(
 ) -> dict[str, Any]:
     """根据 engine_name 从 EnginesSection 提取该引擎需要的配置 dict。"""
     cfg: dict[str, Any] = {**common}
+    base_name = engine_name.split("_")[0] if engine_name.startswith("you_") else engine_name
+    dedicated_proxy = getattr(engines, f"{base_name}_proxy", getattr(engines, f"{engine_name}_proxy", "")).strip()
+    if dedicated_proxy:
+        if dedicated_proxy.lower() in ("direct", "none", "off"):
+            cfg["proxy"] = None
+        else:
+            cfg["proxy"] = dedicated_proxy
     if engine_name == "google":
         cfg.update({"enabled": engines.google_enabled, "language": engines.google_language})
     elif engine_name == "bing":
         cfg.update({"enabled": engines.bing_enabled, "region": engines.bing_region})
     elif engine_name == "sogou":
         cfg.update({"enabled": engines.sogou_enabled})
+    elif engine_name == "baidu":
+        cfg.update({"enabled": engines.baidu_enabled})
+    elif engine_name == "brave":
+        cfg.update({"enabled": engines.brave_enabled})
+    elif engine_name == "wikipedia":
+        cfg.update({"enabled": engines.wikipedia_enabled, "language": engines.wikipedia_language})
+    elif engine_name == "searxng":
+        cfg.update(
+            {
+                "enabled": engines.searxng_enabled,
+                "base_url": engines.searxng_base_url,
+                "categories": engines.searxng_categories,
+                "engines": engines.searxng_engines,
+                "secret_key": engines.searxng_secret_key,
+            }
+        )
     elif engine_name == "duckduckgo":
         timelimit = engines.duckduckgo_timelimit
         cfg.update(
@@ -175,6 +202,10 @@ class EngineChain:
         self.google = GoogleEngine(_build_engine_dict("google", engines, common))
         self.bing = BingEngine(_build_engine_dict("bing", engines, common))
         self.sogou = SogouEngine(_build_engine_dict("sogou", engines, common))
+        self.baidu = BaiduEngine(_build_engine_dict("baidu", engines, common))
+        self.brave = BraveEngine(_build_engine_dict("brave", engines, common))
+        self.wikipedia = WikipediaEngine(_build_engine_dict("wikipedia", engines, common))
+        self.searxng = SearXNGEngine(_build_engine_dict("searxng", engines, common))
         self.duckduckgo = DuckDuckGoEngine(_build_engine_dict("duckduckgo", engines, common))
         self.tavily = TavilyEngine(_build_engine_dict("tavily", engines, common))
         self.anysearch = AnySearchEngine(_build_engine_dict("anysearch", engines, common))
@@ -212,13 +243,17 @@ class EngineChain:
             ("deepseek", self.deepseek),
             ("tavily", self.tavily),
             ("anysearch", self.anysearch),
+            ("searxng", self.searxng),
             ("exa", self.exa),
             ("you", self.you),
             ("you_news", self.you_news),
             ("google", self.google),
             ("bing", self.bing),
-            ("duckduckgo", self.duckduckgo),
+            ("baidu", self.baidu),
             ("sogou", self.sogou),
+            ("brave", self.brave),
+            ("duckduckgo", self.duckduckgo),
+            ("wikipedia", self.wikipedia),
         ]
         if default_engine in {pair[0] for pair in all_engines}:
             ordered = [pair for pair in all_engines if pair[0] == default_engine]

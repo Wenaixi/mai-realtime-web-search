@@ -5,25 +5,35 @@
 """
 
 from .anysearch import AnySearchEngine
+from .baidu import BaiduEngine
 from .base import BaseSearchEngine, SearchResult
+from .bing import BingEngine
+from .brave import BraveEngine
 from .deepseek import DeepSeekEngine
+from .duckduckgo import DuckDuckGoEngine
 from .exa import ExaEngine
 from .google import GoogleEngine
-from .bing import BingEngine
+from .searxng import SearXNGEngine
 from .sogou import SogouEngine
 from .tavily import TavilyEngine
-from .you import YouSearchEngine, YouLiveNewsEngine, YouContentsClient, YouImagesEngine
+from .wikipedia import WikipediaEngine
+from .you import YouContentsClient, YouImagesEngine, YouLiveNewsEngine, YouSearchEngine
 
 __all__ = [
     "BaseSearchEngine",
     "SearchResult",
     "AnySearchEngine",
+    "BaiduEngine",
+    "BingEngine",
+    "BraveEngine",
     "DeepSeekEngine",
+    "DuckDuckGoEngine",
     "ExaEngine",
     "GoogleEngine",
-    "BingEngine",
+    "SearXNGEngine",
     "SogouEngine",
     "TavilyEngine",
+    "WikipediaEngine",
     "YouSearchEngine",
     "YouLiveNewsEngine",
     "YouContentsClient",

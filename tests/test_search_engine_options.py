@@ -12,12 +12,24 @@ import unittest
 
 from pydantic import ValidationError
 
+_PLUGINS_ROOT = Path(__file__).resolve().parents[2]
 _HOST_ROOT = Path(__file__).resolve().parents[3]
-if str(_HOST_ROOT) not in sys.path:
-    sys.path.insert(0, str(_HOST_ROOT))
+for root in (_PLUGINS_ROOT, _HOST_ROOT):
+    if str(root) not in sys.path:
+        sys.path.insert(0, str(root))
 
-from plugins.google_search_plugin.config import EnginesSection, SearchBackendSection  # noqa: E402
-from plugins.google_search_plugin.pipelines.engine_chain import _build_common_cfg, _build_engine_dict  # noqa: E402
+_PKG_NAME = Path(__file__).resolve().parents[1].name
+try:
+    config_mod = __import__(f"{_PKG_NAME}.config", fromlist=["EnginesSection", "SearchBackendSection"])
+    EnginesSection = config_mod.EnginesSection
+    SearchBackendSection = config_mod.SearchBackendSection
+
+    chain_mod = __import__(f"{_PKG_NAME}.pipelines.engine_chain", fromlist=["_build_common_cfg", "_build_engine_dict"])
+    _build_common_cfg = chain_mod._build_common_cfg
+    _build_engine_dict = chain_mod._build_engine_dict
+except ModuleNotFoundError:
+    from plugins.google_search_plugin.config import EnginesSection, SearchBackendSection  # noqa: E402
+    from plugins.google_search_plugin.pipelines.engine_chain import _build_common_cfg, _build_engine_dict  # noqa: E402
 
 
 class SearchEngineOptionTests(unittest.TestCase):
@@ -337,6 +349,72 @@ class SearchEngineOptionTests(unittest.TestCase):
             ).exa_start_published_date,
             "2026-10-28",
         )
+
+    def test_new_engines_options_and_default_configs(self) -> None:
+        engines = EnginesSection(
+            baidu_enabled=True,
+            brave_enabled=True,
+            wikipedia_enabled=True,
+            wikipedia_language="en",
+            searxng_enabled=True,
+            searxng_base_url="https://searx.example.org",
+            searxng_categories="it,science",
+            searxng_engines="google,bing",
+            searxng_secret_key="secret-token-123",
+        )
+        # Baidu
+        baidu_cfg = _build_engine_dict("baidu", engines, self.common)
+        self.assertEqual(baidu_cfg["enabled"], True)
+        self.assertEqual(baidu_cfg["proxy"], self.common["proxy"])
+
+        # Brave
+        brave_cfg = _build_engine_dict("brave", engines, self.common)
+        self.assertEqual(brave_cfg["enabled"], True)
+
+        # Wikipedia
+        wiki_cfg = _build_engine_dict("wikipedia", engines, self.common)
+        self.assertEqual(wiki_cfg["enabled"], True)
+        self.assertEqual(wiki_cfg["language"], "en")
+
+        # SearXNG
+        searxng_cfg = _build_engine_dict("searxng", engines, self.common)
+        self.assertEqual(searxng_cfg["enabled"], True)
+        self.assertEqual(searxng_cfg["base_url"], "https://searx.example.org")
+        self.assertEqual(searxng_cfg["categories"], "it,science")
+        self.assertEqual(searxng_cfg["engines"], "google,bing")
+        self.assertEqual(searxng_cfg["secret_key"], "secret-token-123")
+
+    def test_dedicated_engine_proxy_overrides_global_and_supports_direct(self) -> None:
+        engines = EnginesSection(
+            google_enabled=True,
+            google_proxy="http://10.150.1.139:7890",
+            bing_enabled=True,
+            bing_proxy="",
+            duckduckgo_enabled=True,
+            duckduckgo_proxy="direct",
+            you_enabled=True,
+            you_proxy="http://10.150.1.139:7890",
+            searxng_proxy="none",
+        )
+        # 1. 独立代理覆盖全局代理
+        google_cfg = _build_engine_dict("google", engines, self.common)
+        self.assertEqual(google_cfg["proxy"], "http://10.150.1.139:7890")
+
+        # 2. 留空继承全局代理
+        bing_cfg = _build_engine_dict("bing", engines, self.common)
+        self.assertEqual(bing_cfg["proxy"], self.common["proxy"])
+
+        # 3. 填写 direct 强制直连免代理
+        ddg_cfg = _build_engine_dict("duckduckgo", engines, self.common)
+        self.assertIsNone(ddg_cfg["proxy"])
+
+        # 4. You 子引擎自动继承 you_proxy
+        you_news_cfg = _build_engine_dict("you_news", engines, self.common)
+        self.assertEqual(you_news_cfg["proxy"], "http://10.150.1.139:7890")
+
+        # 5. searxng 填写 none 强制直连免代理
+        searxng_cfg = _build_engine_dict("searxng", engines, self.common)
+        self.assertIsNone(searxng_cfg["proxy"])
 
 
 if __name__ == "__main__":

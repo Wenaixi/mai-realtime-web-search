@@ -10,7 +10,13 @@ from typing import Literal
 
 from pydantic import field_validator, model_validator
 
-from maibot_sdk import Field, PluginConfigBase
+try:
+    from maibot_sdk import Field, PluginConfigBase
+except ImportError:
+    from pydantic import BaseModel, Field
+
+    class PluginConfigBase(BaseModel):
+        pass
 
 # ---------------------------------------------------------------------------
 # Sections
@@ -81,7 +87,7 @@ class SearchBackendSection(PluginConfigBase):
     __ui_order__ = 3
 
     default_engine: Literal[
-        "google", "bing", "sogou", "duckduckgo", "tavily", "anysearch", "exa", "you", "you_news", "deepseek"
+        "google", "bing", "sogou", "baidu", "brave", "wikipedia", "searxng", "duckduckgo", "tavily", "anysearch", "exa", "you", "you_news", "deepseek"
     ] = Field(
         default="bing",
         description="默认搜索引擎",
@@ -131,6 +137,27 @@ class EnginesSection(PluginConfigBase):
     sogou_enabled: bool = Field(default=True, description="是否启用搜狗搜索")
     sogou_proxy: str = Field(default="", description="搜狗搜索独立代理；留空继承全局代理，填写 direct 强制直连")
 
+    # 百度
+    baidu_enabled: bool = Field(default=False, description="是否启用百度搜索")
+    baidu_proxy: str = Field(default="", description="百度搜索独立代理；留空继承全局代理，填写 direct 强制直连")
+
+    # Brave
+    brave_enabled: bool = Field(default=False, description="是否启用 Brave 独立隐私搜索")
+    brave_proxy: str = Field(default="", description="Brave 搜索独立代理；留空继承全局代理，填写 direct 强制直连")
+
+    # 维基百科
+    wikipedia_enabled: bool = Field(default=False, description="是否启用维基百科知识搜索")
+    wikipedia_language: str = Field(default="zh", description="维基百科语言代码，例如 zh、en、ja")
+    wikipedia_proxy: str = Field(default="", description="维基百科搜索独立代理；留空继承全局代理，填写 direct 强制直连")
+
+    # SearXNG
+    searxng_enabled: bool = Field(default=False, description="是否启用 SearXNG 实例元搜索")
+    searxng_base_url: str = Field(default="http://127.0.0.1:8888", description="SearXNG 实例地址，例如 http://127.0.0.1:8888 或自建域名")
+    searxng_categories: str = Field(default="general", description="SearXNG 搜索分类，例如 general、it、science")
+    searxng_engines: str = Field(default="", description="SearXNG 底层聚合引擎（逗号分隔），留空表示全部")
+    searxng_secret_key: str = Field(default="", description="SearXNG 访问令牌或 Secret Key，可选")
+    searxng_proxy: str = Field(default="", description="SearXNG 搜索独立代理；留空继承全局代理，填写 direct 强制直连")
+
     # DuckDuckGo (DDGS)
     duckduckgo_enabled: bool = Field(default=True, description="是否启用 DDGS 元搜索引擎")
     duckduckgo_region: str = Field(default="wt-wt", description="搜索区域代码,例如 'us-en' 或 'cn-zh'")
@@ -169,7 +196,7 @@ class EnginesSection(PluginConfigBase):
     tavily_proxy: str = Field(default="", description="Tavily 搜索独立代理，例如 http://10.150.1.139:7890；留空继承全局代理，填写 direct 强制直连")
 
     # AnySearch
-    anysearch_enabled: bool = Field(default=True, description="是否启用 AnySearch 搜索")
+    anysearch_enabled: bool = Field(default=False, description="是否启用 AnySearch 搜索")
     anysearch_api_keys: list[str] = Field(
         default_factory=list,
         description="AnySearch API key 列表，每项一把密钥；多个密钥随机尝试，留空使用匿名请求",
@@ -192,6 +219,7 @@ class EnginesSection(PluginConfigBase):
         default_factory=list,
         description="Exa API key 列表，每项一把密钥；单个密钥也填写到列表中，多个密钥随机尝试",
     )
+    exa_proxy: str = Field(default="", description="Exa 搜索独立代理，例如 http://10.150.1.139:7890；留空继承全局代理，填写 direct 强制直连")
     exa_search_type: Literal["auto", "lite", "deep-lite", "deep"] = Field(
         default="auto",
         description="搜索类型：auto 自动、lite 低延迟缓存检索、deep-lite 轻量深度检索、deep 深度检索",
@@ -321,6 +349,7 @@ class EnginesSection(PluginConfigBase):
         description="是否强制使用 You Contents(不受搜索引擎来源限制)",
     )
     you_images_enabled: bool = Field(default=False, description="是否启用 You Images(early access)")
+    you_proxy: str = Field(default="", description="You.com 搜索独立代理，例如 http://10.150.1.139:7890；留空继承全局代理，填写 direct 强制直连")
 
     # DeepSeek
     deepseek_enabled: bool = Field(default=False, description="是否启用 DeepSeek 官方联网搜索")
@@ -340,6 +369,7 @@ class EnginesSection(PluginConfigBase):
         default=2048,
         description="DeepSeek 生成答案的最大 Token 数",
     )
+    deepseek_proxy: str = Field(default="", description="DeepSeek 搜索独立代理；留空继承全局代理，填写 direct 强制直连")
 
 
 class TranslationSection(PluginConfigBase):
