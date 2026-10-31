@@ -286,13 +286,19 @@ class GoogleSearchPlugin(MaiBotPlugin):
 
     @Tool(
         "web_search",
-        description="谷歌搜索工具。当见到有人发出疑问或者遇到不熟悉的事情时候，直接使用它获得最新知识！",
+        description="全网实时搜索与网页阅读工具。当遇到不熟悉的事情、疑问或需要最新知识时使用。默认并发聚合各大搜索引擎并智能去重排序；亦可按需指定单一搜索源。",
         parameters=[
             ToolParameterInfo(
                 name="question",
                 param_type=ToolParamType.STRING,
-                description="用于搜索引擎的搜索关键词或完整问题(将被原样送入搜索引擎),也可直接传入 URL 获取网页内容",
+                description="用于搜索引擎的搜索关键词或完整问题(将被送入搜索引擎),也可直接传入 URL 获取网页内容",
                 required=True,
+            ),
+            ToolParameterInfo(
+                name="engine",
+                param_type=ToolParamType.STRING,
+                description="可选: 指定某个搜索引擎（如 baidu, bing, wikipedia, google, sogou, searxng 等）；留空由系统自动并发聚合去重排序。",
+                required=False,
             ),
             ToolParameterInfo(
                 name="tavily_topic",
@@ -308,6 +314,7 @@ class GoogleSearchPlugin(MaiBotPlugin):
     async def handle_web_search(
         self,
         question: str = "",
+        engine: str = "",
         tavily_topic: str = "",
         **kwargs: Any,
     ) -> dict[str, str]:
@@ -342,11 +349,12 @@ class GoogleSearchPlugin(MaiBotPlugin):
                     bot_name=bot_name,
                 )
             else:
-                self.ctx.logger.info("开始执行搜索: %s", question)
+                self.ctx.logger.info("开始执行搜索: %s (指定引擎=%s)", question, engine or "全源并发聚合")
                 content = await self._search_pipeline.run(  # type: ignore[union-attr]
                     question,
                     bot_name=bot_name,
                     tavily_topic_override=topic_override,
+                    engine_override=(engine or "").strip().lower() or None,
                 )
             return {"name": "web_search", "content": content}
         except Exception as exc:  # noqa: BLE001

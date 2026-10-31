@@ -416,6 +416,45 @@ class SearchEngineOptionTests(unittest.TestCase):
         searxng_cfg = _build_engine_dict("searxng", engines, self.common)
         self.assertIsNone(searxng_cfg["proxy"])
 
+    def test_searxng_style_aggregation_deduplication_and_ranking(self) -> None:
+        import asyncio
+        from unittest.mock import AsyncMock
+        base_mod = __import__(f"{_PKG_NAME}.search_engines.base", fromlist=["SearchResult"])
+        SearchResult = base_mod.SearchResult
+        
+        # 导入 EngineChain
+        chain_mod = __import__(f"{_PKG_NAME}.pipelines.engine_chain", fromlist=["EngineChain"])
+        EngineChain = chain_mod.EngineChain
+
+        engines = EnginesSection(
+            bing_enabled=True,
+            baidu_enabled=True,
+        )
+        backend = SearchBackendSection(default_engine="bing", max_results=5)
+        chain = EngineChain(engines, backend)
+
+        # 构造 Bing 与 百度返回结果（其中包含相同域名但带追踪参数的 URL）
+        r_bing = [
+            SearchResult(title="Python Org", url="https://python.org/", snippet="Official site"),
+            SearchResult(title="Bing Only", url="https://bing.com/python", snippet="Bing snippet"),
+        ]
+        r_baidu = [
+            SearchResult(title="Python Official", url="https://python.org?utm_source=baidu", snippet="Python official language site with rich details"),
+            SearchResult(title="Baidu Only", url="https://baidu.com/python", snippet="Baidu snippet"),
+        ]
+
+        chain.bing.search = AsyncMock(return_value=r_bing)
+        chain.baidu.search = AsyncMock(return_value=r_baidu)
+
+        results, summary = asyncio.run(chain.search_aggregated("python", 5))
+
+        # 1. 验证去重：python.org 虽带 utm 追踪参数，仍被成功归一化合并，总条数变为 3
+        self.assertEqual(len(results), 3)
+        # 2. 验证多引擎融合排序：多源共同命中的 python.org 分数最高置顶在第 1
+        self.assertIn("python.org", results[0].url)
+        # 3. 验证摘要内容合并升级：自动保留更详细的摘要
+        self.assertIn("rich details", results[0].snippet)
+
 
 if __name__ == "__main__":
     unittest.main()

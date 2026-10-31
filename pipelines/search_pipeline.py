@@ -57,23 +57,26 @@ class SearchPipeline:
         *,
         bot_name: str,
         tavily_topic_override: Optional[str] = None,
+        engine_override: Optional[str] = None,
     ) -> str:
-        """执行主搜索。
+        """执行主搜索（采用 SearXNG 风格的多引擎并发聚合、去重与融合排序）。
 
         Args:
             question: 搜索关键词或问题(planner 直接给出,原样送引擎)
             bot_name: bot 昵称(prompt 用)
             tavily_topic_override: 调用方显式指定的 tavily topic
+            engine_override: 调用方或 AI 显式指定的搜索引擎
 
         Returns:
             API 直返结果或 LLM 总结文本;无可用结果时返回提示文本
         """
-        # ---- 1. 多引擎 fallback 搜索 ---- #
+        # ---- 1. SearXNG 风格多引擎并发聚合与去重排序 ---- #
         max_results = self._backend.max_results
-        results, last_engine = await self._engines.search_with_fallback(
+        results, last_engine = await self._engines.search_aggregated(
             question,
             max_results,
             tavily_topic=tavily_topic_override,
+            engine_override=engine_override,
         )
         if not results:
             return f"关于「{question}」，我没有找到相关的网络信息。"

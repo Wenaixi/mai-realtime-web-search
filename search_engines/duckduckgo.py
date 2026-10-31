@@ -58,7 +58,7 @@ class DuckDuckGoEngine(BaseSearchEngine):
     def __init__(self, config: Optional[Dict[str, Any]] = None) -> None:
         super().__init__(config)
         if not HAS_DDGS:
-            raise ImportError("没有 ddgs 库。请确保它已在插件依赖中声明。")
+            logger.warning("当前环境未检测到 ddgs 库，DuckDuckGo 引擎处于离线降级状态。")
         
         # 优化默认配置以提高搜索成功率
         self.region = self.config.get("region", "wt-wt")  # 全球搜索
@@ -69,15 +69,18 @@ class DuckDuckGoEngine(BaseSearchEngine):
         logger.info(f"DuckDuckGo 引擎初始化完成 - region: {self.region}, backend: {self.backend}, safesearch: {self.safesearch}")
 
     async def search(self, query: str, num_results: int) -> List[SearchResult]:
-        """通过在线程池中运行同步的 ddgs.text 方法来进行搜索
-        
+        """通过在线程池中运行同步的 ddgs.text 方法来进行搜索。
+
         Args:
             query: 搜索查询
             num_results: 期望的结果数量
-            
+
         Returns:
             搜索结果列表
         """
+        if not HAS_DDGS:
+            logger.warning("未安装 ddgs 库，跳过 DuckDuckGo 搜索")
+            return []
         try:
             loop = asyncio.get_event_loop()
             
