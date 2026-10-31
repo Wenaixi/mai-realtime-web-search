@@ -1,5 +1,11 @@
 # 麦麦全网实时联网综合搜索 (wenaixi_mai_realtime_web_search)
 
+[![Release](https://img.shields.io/github/v/release/Wenaixi/mai-realtime-web-search?style=flat-square&color=blue&label=release)](https://github.com/Wenaixi/mai-realtime-web-search/releases)
+[![CI](https://img.shields.io/github/actions/workflow/status/Wenaixi/mai-realtime-web-search/ci.yml?branch=main&style=flat-square&label=CI)](https://github.com/Wenaixi/mai-realtime-web-search/actions)
+[![License](https://img.shields.io/badge/license-AGPL-green?style=flat-square)](LICENSE)
+[![Python](https://img.shields.io/badge/python-3.12%20%7C%203.13-blue?style=flat-square)](https://www.python.org/)
+[![MaiBot](https://img.shields.io/badge/MaiBot-1.2%2B-orange?style=flat-square)](https://docs.mai-mai.org)
+
 > 本插件由 [Wenaixi](https://github.com/Wenaixi) 维护，是专为生产环境深度调优的高可用多引擎聚合搜索分支。
 
 ## 简介与定位
@@ -8,7 +14,6 @@
 
 - **插件目录**：`wenaixi_mai_realtime_web_search`
 - **插件标识符**：`wenaixi.mai_realtime_web_search`
-- **生效版本**：`v4.2.0`
 - **开源许可证**：`GPL-3.0`
 
 ---
