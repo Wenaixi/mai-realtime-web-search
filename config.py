@@ -30,8 +30,8 @@ class PluginSection(PluginConfigBase):
     __ui_icon__ = "package"
     __ui_order__ = 0
 
-    name: str = Field(default="google_search", description="插件名称")
-    version: str = Field(default="4.1.1", description="插件版本")
+    name: str = Field(default="wenaixi_mai_realtime_web_search", description="插件名称")
+    version: str = Field(default="4.2.0", description="插件版本")
     config_version: str = Field(default="4.2.1", description="配置版本(Runner 用于兼容性校验)")
     enabled: bool = Field(default=True, description="是否启用插件")
 
