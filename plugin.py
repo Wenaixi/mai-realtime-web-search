@@ -286,7 +286,12 @@ class GoogleSearchPlugin(MaiBotPlugin):
 
     @Tool(
         "web_search",
-        description="全网实时搜索与网页阅读工具。当遇到不熟悉的事情、疑问或需要最新知识时使用。默认并发聚合各大搜索引擎并智能去重排序；亦可按需指定单一搜索源。",
+        description=(
+            "【全网实时联网搜索与网页阅读工具】极具活人感的核心工具！\n"
+            "遇到任何不确定的知识、近期时事热点、新流行梗、学校/动漫话题或事实疑问时，必须积极主动调用本工具获取最新一手资讯！\n"
+            "【多工具并发推荐】：强烈建议在同一轮思考中，将 web_search 搜索与 reply（回复消息）、msg_react（贴表情）等多个工具同时并发调用，"
+            "不要每次只单调调用一个工具！默认并发聚合各大搜索引擎并智能去重排序。"
+        ),
         parameters=[
             ToolParameterInfo(
                 name="question",
