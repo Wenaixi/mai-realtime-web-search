@@ -16,7 +16,7 @@ from typing import Any, Mapping, Optional
 
 import logging
 
-from maibot_sdk import Action, Command, MaiBotPlugin, Tool
+from maibot_sdk import API, Action, Command, MaiBotPlugin, Tool
 from maibot_sdk.types import ActivationType, ToolParameterInfo, ToolParamType
 
 from .config import GoogleSearchPluginConfig
@@ -365,6 +365,33 @@ class GoogleSearchPlugin(MaiBotPlugin):
         except Exception as exc:  # noqa: BLE001
             self.ctx.logger.error("web_search 执行异常: %s", exc, exc_info=True)
             return {"name": "web_search", "content": ""}
+
+    # ---------------------------------------------------------------- #
+    # API: web_search（跨插件调用入口）
+    # 供其他插件（如 qzone 的 memory_sync 每日新闻）通过 ctx.api.call
+    #   ("wenaixi.mai_realtime_web_search.web_search", query=...) 调用。
+    # ---------------------------------------------------------------- #
+
+    @API(
+        "web_search",
+        description="跨插件联网搜索入口：接收 query 搜索词，返回搜索结果文本。供其他插件调用。",
+        version="1",
+        public=True,
+    )
+    async def api_web_search(self, query: str = "", **kwargs: Any) -> dict[str, str]:
+        """跨插件搜索入口：转调内部 handle_web_search，返回 {result: 内容}。"""
+        # 兼容不同调用方传参名
+        if not (query or "").strip():
+            for alias in ("q", "search_query", "keyword", "question"):
+                value = kwargs.get(alias)
+                if isinstance(value, str) and value.strip():
+                    query = value
+                    break
+        del kwargs
+        result = await self.handle_web_search(question=query.strip())
+        # Tool 返回 {"name","content"}；对外统一为 {"result": content, "content": content} 双字段
+        content = str(result.get("content") or "") if isinstance(result, dict) else ""
+        return {"result": content, "content": content, "name": "web_search"}
 
     # ---------------------------------------------------------------- #
     # Tool: abbreviation_translate
