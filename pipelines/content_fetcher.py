@@ -14,6 +14,7 @@ import aiohttp
 from bs4 import BeautifulSoup
 from readability import Document
 
+from .url_guard import validate_url
 from .zhihu_extractor import ZhihuExtractor, is_zhihu_url
 
 if TYPE_CHECKING:
@@ -55,7 +56,17 @@ class ContentFetcher:
             提取到的正文;失败时 None
         """
         if is_zhihu_url(url):
+            ok, reason = validate_url(url)
+            if not ok:
+                logger.warning("URL 校验拒绝(zhihu): %s (%s)", url, reason)
+                return None
             return await self._zhihu.fetch(url)
+
+        # SSRF 防护：抓取前必须通过 URL 校验（非 http/https、回环/私网/云元数据一律拒）
+        ok, reason = validate_url(url)
+        if not ok:
+            logger.warning("URL 校验拒绝: %s (%s)", url, reason)
+            return None
 
         timeout = self._backend.content_timeout
         max_length = self._backend.max_content_length
@@ -67,67 +78,88 @@ class ContentFetcher:
             ]
             headers = {"User-Agent": random.choice(user_agents)}
 
-            request_kwargs: dict = {"timeout": aiohttp.ClientTimeout(total=timeout), "headers": headers}
+            request_kwargs: dict = {
+                "timeout": aiohttp.ClientTimeout(total=timeout),
+                "headers": headers,
+                # SSRF 防护：关闭自动重定向，由下方手动逐跳校验重定向目标，
+                # 防止 302 跳转到内网地址后被 aiohttp 直接跟随。
+                "allow_redirects": False,
+            }
             proxy = self._backend.proxy or ""
             if proxy:
                 request_kwargs["proxy"] = proxy
 
-            async with session.get(url, **request_kwargs) as response:
-                if response.status != 200:
-                    logger.warning("抓取失败 %s 状态码 %s", url, response.status)
-                    return None
+            current_url = url
+            for _hop in range(5):
+                async with session.get(current_url, **request_kwargs) as response:
+                    if response.status in (301, 302, 303, 307, 308):
+                        location = response.headers.get("Location")
+                        if not location:
+                            logger.warning("抓取失败 %s 重定向无 Location", current_url)
+                            return None
+                        next_url = str(response.url.join(location)) if hasattr(response.url, "join") else location
+                        ok, reason = validate_url(next_url)
+                        if not ok:
+                            logger.warning("重定向目标被拒: %s -> %s (%s)", current_url, next_url, reason)
+                            return None
+                        current_url = next_url
+                        continue
 
-                html_bytes = await response.read()
-                # 智能解码
-                try:
-                    html = html_bytes.decode(response.charset or "utf-8")
-                except (UnicodeDecodeError, TypeError):
+                    if response.status != 200:
+                        logger.warning("抓取失败 %s 状态码 %s", current_url, response.status)
+                        return None
+
+                    html_bytes = await response.read()
+                    # 智能解码
                     try:
-                        html = html_bytes.decode("gbk", errors="ignore")
-                    except UnicodeDecodeError:
-                        html = html_bytes.decode("utf-8", errors="ignore")
+                        html = html_bytes.decode(response.charset or "utf-8")
+                    except (UnicodeDecodeError, TypeError):
+                        try:
+                            html = html_bytes.decode("gbk", errors="ignore")
+                        except UnicodeDecodeError:
+                            html = html_bytes.decode("utf-8", errors="ignore")
 
-                # 1. trafilatura
-                try:
-                    import trafilatura
+                    # 1. trafilatura
+                    try:
+                        import trafilatura
 
-                    extracted = trafilatura.extract(
-                        html,
-                        include_comments=False,
-                        include_tables=True,
-                        no_fallback=False,
-                    )
-                    if extracted and len(extracted.strip()) > 100:
-                        logger.debug("trafilatura 提取成功 %s", url)
-                        return extracted.strip()[:max_length]
-                except ImportError:
-                    logger.debug("trafilatura 未安装,跳过")
-                except Exception as exc:  # noqa: BLE001
-                    logger.debug("trafilatura 提取失败: %s", exc)
+                        extracted = trafilatura.extract(
+                            html,
+                            include_comments=False,
+                            include_tables=True,
+                            no_fallback=False,
+                        )
+                        if extracted and len(extracted.strip()) > 100:
+                            logger.debug("trafilatura 提取成功 %s", url)
+                            return extracted.strip()[:max_length]
+                    except ImportError:
+                        logger.debug("trafilatura 未安装,跳过")
+                    except Exception as exc:  # noqa: BLE001
+                        logger.debug("trafilatura 提取失败: %s", exc)
 
-                # 2. readability-lxml
-                try:
-                    doc = Document(html, min_text_length=50, retry_length=250, url=url)
-                    summary_html = doc.summary()
-                    soup = BeautifulSoup(summary_html, "lxml")
-                    readability_text = soup.get_text(separator="\n", strip=True)
-                    if readability_text and len(readability_text) > 100:
-                        logger.debug("readability 提取成功 %s", url)
-                        return readability_text[:max_length]
-                except Exception as exc:  # noqa: BLE001
-                    logger.debug("readability 提取失败: %s", exc)
+                    # 2. readability-lxml
+                    try:
+                        doc = Document(html, min_text_length=50, retry_length=250, url=url)
+                        summary_html = doc.summary()
+                        soup = BeautifulSoup(summary_html, "lxml")
+                        readability_text = soup.get_text(separator="\n", strip=True)
+                        if readability_text and len(readability_text) > 100:
+                            logger.debug("readability 提取成功 %s", url)
+                            return readability_text[:max_length]
+                    except Exception as exc:  # noqa: BLE001
+                        logger.debug("readability 提取失败: %s", exc)
 
-                # 3. BeautifulSoup 兜底
-                try:
-                    soup = BeautifulSoup(html, "lxml")
-                    for tag in soup(["script", "style", "nav", "header", "footer", "aside"]):
-                        tag.decompose()
-                    fallback = soup.get_text(separator="\n", strip=True)
-                    logger.debug("BeautifulSoup 兜底 %s", url)
-                    return fallback[:max_length] if fallback else None
-                except Exception as exc:  # noqa: BLE001
-                    logger.error("BeautifulSoup 兜底也失败: %s", exc)
-                    return None
+                    # 3. BeautifulSoup 兜底
+                    try:
+                        soup = BeautifulSoup(html, "lxml")
+                        for tag in soup(["script", "style", "nav", "header", "footer", "aside"]):
+                            tag.decompose()
+                        fallback = soup.get_text(separator="\n", strip=True)
+                        logger.debug("BeautifulSoup 兜底 %s", url)
+                        return fallback[:max_length] if fallback else None
+                    except Exception as exc:  # noqa: BLE001
+                        logger.error("BeautifulSoup 兜底也失败: %s", exc)
+                        return None
 
         except asyncio.TimeoutError:
             logger.warning("抓取超时: %s", url)
