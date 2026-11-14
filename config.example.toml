@@ -1,0 +1,132 @@
+# 配置模板：复制为 config.toml 后按需修改。
+# 真实 config.toml 已在 .gitignore 中排除，请勿把填写后的版本提交到版本库。
+# 标注 YOUR_*_HERE 的字段必须替换为实际值才能工作。
+
+[plugin]
+name = "google_search"
+version = "0.1.0"
+config_version = "4.2.1"
+enabled = true
+
+[models]
+model_name = "replyer"
+temperature = 0.7
+llm_timeout_seconds = 60
+
+[actions]
+image_search_enabled = false
+
+[search_backend]
+default_engine = "bing"
+max_results = 15
+timeout = 20
+proxy = ""
+fetch_content = true
+content_timeout = 10
+max_content_length = 3000
+zhihu_cookies = ""
+user_agents = ["Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122 Safari/537.36", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122 Safari/537.36", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:123.0) Gecko/20100101 Firefox/123.0"]
+
+[engines]
+# 各搜索源独立代理配置（默认全部留空无代理；主人需要时填入代理地址，例如 "http://10.150.1.139:7890"）
+google_enabled = false
+google_language = "zh-cn"
+google_proxy = ""
+
+bing_enabled = true
+bing_region = "zh-CN"
+bing_proxy = ""
+
+sogou_enabled = true
+sogou_proxy = ""
+
+baidu_enabled = false
+baidu_proxy = ""
+
+brave_enabled = false
+brave_proxy = ""
+
+wikipedia_enabled = false
+wikipedia_language = "zh"
+wikipedia_proxy = ""
+
+searxng_enabled = false
+searxng_base_url = "http://127.0.0.1:8888"
+searxng_categories = "general"
+searxng_engines = ""
+searxng_secret_key = ""
+searxng_proxy = ""
+
+duckduckgo_enabled = false
+duckduckgo_region = "wt-wt"
+duckduckgo_backend = "auto"
+duckduckgo_safesearch = "moderate"
+duckduckgo_timelimit = "none"
+duckduckgo_proxy = ""
+
+tavily_enabled = false
+tavily_api_keys = []
+tavily_search_depth = "basic"
+tavily_include_raw_content = false
+tavily_include_answer = true
+tavily_topic = ""
+tavily_turbo = false
+tavily_proxy = ""
+
+anysearch_enabled = true
+anysearch_api_keys = "YOUR_API_KEY_HERE"
+anysearch_tag = ""
+anysearch_zone = "auto"
+anysearch_language = ""
+anysearch_params = ""
+anysearch_format = "json"
+anysearch_proxy = ""
+
+exa_enabled = false
+exa_api_keys = []
+exa_search_type = "auto"
+exa_category = ""
+exa_include_domains = []
+exa_exclude_domains = []
+exa_start_published_date = ""
+exa_end_published_date = ""
+exa_user_location = ""
+exa_moderation = false
+exa_objective = ""
+exa_additional_queries = []
+exa_include_highlights = true
+exa_highlights_query = ""
+exa_highlights_max_characters = 0
+exa_include_text = false
+exa_text_max_characters = 0
+exa_max_age_hours = -2
+exa_livecrawl_timeout_ms = 0
+exa_proxy = ""
+
+you_enabled = false
+you_news_enabled = false
+you_api_keys = []
+you_freshness = ""
+you_offset = 0
+you_country = ""
+you_language = ""
+you_safesearch = ""
+you_livecrawl = ""
+you_livecrawl_formats = ""
+you_contents_enabled = false
+you_contents_format = "markdown"
+you_contents_force = false
+you_images_enabled = false
+you_proxy = ""
+
+deepseek_enabled = false
+deepseek_api_keys = []
+deepseek_base_url = "https://api.deepseek.com"
+deepseek_model = "deepseek-chat"
+deepseek_max_tokens = "YOUR_TOKEN_HERE"
+deepseek_proxy = ""
+
+[translation]
+enabled = true
+timeout_seconds = 10
+max_retries = 3
